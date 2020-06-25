@@ -1,6 +1,6 @@
-def get_train_transforsm():
+def get_train_transforms():
     pass
 
 
-def get_test_transforsm():
+def get_test_transforms():
     pass
