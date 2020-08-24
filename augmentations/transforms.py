@@ -15,6 +15,7 @@ from albumentations import (
     OneOf,
     CLAHE,
     RandomBrightnessContrast,
+    GaussNoise,
     RandomGamma
 )
 from albumentations.pytorch import ToTensorV2
@@ -36,15 +37,17 @@ def get_preprocessing():
 
 def get_train_transforms(preprocessing_fn=None):
     result = Compose([
+        VerticalFlip(p=0.5),
         RandomRotate90(p=0.5),
         OneOf([
             ElasticTransform(p=0.5, alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03),
             GridDistortion(p=0.5),
-            OpticalDistortion(p=0.5, distort_limit=2, shift_limit=0.5)
+            OpticalDistortion(p=1, distort_limit=2, shift_limit=0.5)
         ], p=0.8),
-        CLAHE(p=0.8),
+        # CLAHE(p=0.8),
+        GaussNoise(),
         RandomBrightnessContrast(p=0.8),
-        RandomGamma(p=0.8),
+        # RandomGamma(p=0.5),
         Resize(p=1, height=256, width=320),
     ], p=1)
     return result

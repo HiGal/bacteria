@@ -44,5 +44,30 @@ class DatasetRetriever(Dataset):
             # if self.preprocessing:
             #     preprocessed = self.preprocessing(image=image, mask=mask)
             #     image, mask = preprocessed['image'], preprocessed['mask']
+        else:
+            mask = torch.tensor(mask).float().permute(2, 0, 1)
         image = self.norm(image)
         return image, (mask, label)
+
+
+class TestDataset(Dataset):
+
+    def __init__(self, root_folder, df):
+        self.root_folder = root_folder
+        self.df = df
+        self.norm = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])
+        ])
+
+    def __len__(self):
+        return self.df.shape[0]
+
+    def __getitem__(self, idx):
+        sample = self.df.iloc[idx]
+        image = cv2.imread(f"{self.root_folder}/test/{sample['name']}.png")
+        # image = cv2.resize(image, (320, 256))
+        image = self.norm(image)
+
+        return image

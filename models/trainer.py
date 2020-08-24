@@ -27,7 +27,7 @@ class TrainClassEpoch(Epoch):
     def batch_update(self, x, y):
         self.optimizer.zero_grad()
         prediction_mask, y_pred = self.model.forward(x)
-        loss = 0.5*(self.loss(prediction_mask, y[0]) + self.cls_loss(y_pred, y[1]))
+        loss = 0.7*self.loss(prediction_mask, y[0]) + 0.3*self.cls_loss(y_pred, y[1])
         loss.backward()
         self.optimizer.step()
         return loss, prediction_mask, y_pred
@@ -42,7 +42,7 @@ class TrainClassEpoch(Epoch):
 
         with tqdm(dataloader, desc=self.stage_name, file=sys.stdout, disable=not (self.verbose)) as iterator:
             for x, y in iterator:
-                x, y = x.to(self.device), (y[0].to(self.device),y[1].to(self.device))
+                x, y = x.to(self.device).half(), (y[0].to(self.device).half(), y[1].to(self.device))
                 loss, mask_pred, y_pred = self.batch_update(x, y)
 
                 # update loss logs
@@ -84,7 +84,7 @@ class ValidClassEpoch(Epoch):
     def batch_update(self, x, y):
         with torch.no_grad():
             prediction_mask, y_pred = self.model.forward(x)
-            loss = 0.5*(self.loss(prediction_mask, y[0]) + self.cls_loss(y_pred, y[1]))
+            loss = 0.5 * (self.loss(prediction_mask, y[0]) + self.cls_loss(y_pred, y[1]))
         return loss, prediction_mask, y_pred
 
     def run(self, dataloader):
@@ -97,7 +97,7 @@ class ValidClassEpoch(Epoch):
 
         with tqdm(dataloader, desc=self.stage_name, file=sys.stdout, disable=not (self.verbose)) as iterator:
             for x, y in iterator:
-                x, y = x.to(self.device), (y[0].to(self.device),y[1].to(self.device))
+                x, y = x.to(self.device).half(), (y[0].to(self.device).half(), y[1].to(self.device).half())
                 loss, mask_pred, y_pred = self.batch_update(x, y)
 
                 # update loss logs
@@ -119,6 +119,7 @@ class ValidClassEpoch(Epoch):
 
         return logs
 
+
 class Fitter:
 
     def __init__(self, model, device, config):
@@ -131,9 +132,11 @@ class Fitter:
         metrics = [
             smp.utils.metrics.IoU(threshold=0.5)
         ]
-        optimizer = torch.optim.Adam([
+        optimizer = torch.optim.AdamW([
             dict(params=self.model.parameters(), lr=self.config.lr),
         ])
+
+        scheduler = self.config.SchedulerClass(optimizer, **self.config.scheduler_params)
 
         loss = smp.utils.losses.DiceLoss()
         cls_loss = torch.nn.BCELoss()
@@ -164,12 +167,15 @@ class Fitter:
             train_logs = train_epoch.run(train_loader)
             valid_logs = valid_epoch.run(val_loader)
 
+            if self.config.scheduler_step:
+                scheduler.step(metrics=valid_logs['dice_loss'])
+
             # do something (save model, change lr, etc.)
             if max_score < valid_logs['iou_score']:
                 max_score = valid_logs['iou_score']
                 torch.save(self.model, './best_model.pth')
                 print('Model saved!')
 
-            if i == 25:
-                optimizer.param_groups[0]['lr'] = 1e-5
-                print('Decrease decoder learning rate to 1e-5!')
+            # if i == 25:
+            #     optimizer.param_groups[0]['lr'] = 1e-5
+            #     print('Decrease decoder learning rate to 1e-5!')

@@ -9,20 +9,25 @@ import torch
 from sklearn.model_selection import StratifiedKFold
 
 
-def json_to_dataframe(data_root):
+def json_to_dataframe(data_root, train=True):
     data_pd = []
-    for path in glob(f"{data_root}/train/*.json"):
-        with open(path, "r") as f:
-            data = json.load(f)
-        name = (path.split("/")[-1]).split(".")[0]
-        label = data["shapes"][0]['label']
-        data_pd.append({"name": name, "label": label})
+    if train:
+        for path in glob(f"{data_root}/train/*.json"):
+            with open(path, "r") as f:
+                data = json.load(f)
+            name = (path.split("/")[-1]).split(".")[0]
+            label = data["shapes"][0]['label']
+            data_pd.append({"name": name, "label": label})
 
-    df = pd.DataFrame(data_pd)
-    df['label_encoded'] = df['label'].factorize()[0]
-    skf = StratifiedKFold()
-    for fold_number, (train_index, val_index) in enumerate(skf.split(X=df.index, y=df['label'])):
-        df.loc[df.iloc[val_index].index, 'fold'] = fold_number
+        df = pd.DataFrame(data_pd)
+        df['label_encoded'] = df['label'].factorize()[0]
+        skf = StratifiedKFold()
+        for fold_number, (train_index, val_index) in enumerate(skf.split(X=df.index, y=df['label'])):
+            df.loc[df.iloc[val_index].index, 'fold'] = fold_number
+    else:
+        for path in glob(f"{data_root}/test/*.png"):
+            data_pd.append({"name":(path.split("/")[-1]).split(".")[0]})
+            df = pd.DataFrame(data_pd)
     return df
 
 

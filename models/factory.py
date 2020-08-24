@@ -10,7 +10,7 @@ def get_net(model_name='resnet34'):
         activation='sigmoid',  # activation function, default is None
         classes=6,  # define number of output labels
     )
-    model = smp.FPN(model_name, encoder_weights='imagenet', activation='sigmoid', aux_params=aux_params)
+    model = smp.FPN(model_name, encoder_weights='advprop', activation='sigmoid', aux_params=aux_params)
     # model.segmentation_head = SegmentationHead(
     #     in_channels=model.decoder.out_channels,
     #     out_channels=1,

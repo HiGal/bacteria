@@ -10,7 +10,7 @@ import torch
 def run_training():
     net, preprocess_params = get_net(TrainGlobalConfig.backbone)
     device = 'cuda:0'  # define by yourself
-    net.to(device)
+    net.to(device).half()
 
     df = json_to_dataframe(TrainGlobalConfig.data_root)
 
@@ -19,14 +19,14 @@ def run_training():
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
-        batch_size=8,
+        batch_size=TrainGlobalConfig.train_batch_size,
         shuffle=True,
         num_workers=4
     )
 
     val_loader = torch.utils.data.DataLoader(
         val_dataset,
-        batch_size=4,
+        batch_size=TrainGlobalConfig.valid_batch_size,
         shuffle=False,
         num_workers=4
     )
